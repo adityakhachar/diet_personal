@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Vegetarian Meal Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Beige, Earthy Tones) -->
+    <!-- Application Structure Plan: A user-centric, tabbed interface organized by day of the week. This structure allows for easy daily tracking and future planning without overwhelming the user. The main interaction is switching between days, which updates the displayed meal plan and a dynamic macronutrient chart. This design was chosen to directly support the user's primary task of following a daily meal schedule. -->
+    <!-- Visualization & Content Choices: The core content is the meal plan, presented in clear, card-based layouts for readability. The key visualization is a dynamic Donut Chart (Chart.js/Canvas) showing the estimated daily macronutrient split (Protein, Carbs, Fats). Goal: Inform/Summarize. Interaction: Updates on day selection. Justification: Provides a quick, visual summary of nutritional balance, adding value beyond a static text plan. General tips are presented in a static, easily accessible section. CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF5;
+            color: #4A4A4A;
+        }
+        .active-tab {
+            background-color: #D4A373 !important;
+            color: #FEFAE0 !important;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-[#6B4F4F]">Your Weekly Meal Plan</h1>
+            <p class="mt-2 text-lg text-gray-600">A personalized vegetarian diet for muscle gain, tailored to your schedule.</p>
+        </header>
+
+        <nav class="flex flex-wrap justify-center gap-2 mb-8">
+            <button data-day="monday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Monday</button>
+            <button data-day="tuesday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Tuesday</button>
+            <button data-day="wednesday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Wednesday</button>
+            <button data-day="thursday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Thursday</button>
+            <button data-day="friday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Friday</button>
+            <button data-day="saturday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Saturday</button>
+            <button data-day="sunday" class="day-tab px-4 py-2 rounded-full bg-white text-gray-700 shadow-sm transition-all duration-300 hover:bg-gray-100">Sunday</button>
+        </nav>
+
+        <main id="plan-content">
+        </main>
+
+        <section class="mt-12 p-6 bg-[#FEFAE0] rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-4 text-[#6B4F4F]">General Tips for Success</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
+                <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">💧</p>
+                    <h3 class="font-semibold text-lg">Hydration is Key</h3>
+                    <p class="text-sm text-gray-600">Drink at least 3-4 liters of water throughout the day.</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">🥑</p>
+                    <h3 class="font-semibold text-lg">Healthy Fats are Friends</h3>
+                    <p class="text-sm text-gray-600">Incorporate nuts, seeds, avocados, and olive oil into your diet.</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">😴</p>
+                    <h3 class="font-semibold text-lg">Rest is Important</h3>
+                    <p class="text-sm text-gray-600">Aim for 7-8 hours of quality sleep each night for muscle recovery.</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">🍽️</p>
+                    <h3 class="font-semibold text-lg">Don't Skip Meals</h3>
+                    <p class="text-sm text-gray-600">Consistency is crucial for weight gain. Eat at regular intervals.</p>
+                </div>
+                <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">👂</p>
+                    <h3 class="font-semibold text-lg">Listen to Your Body</h3>
+                    <p class="text-sm text-gray-600">Adjust portion sizes based on your hunger and energy levels.</p>
+                </div>
+                 <div class="p-4 bg-white rounded-xl shadow-sm">
+                    <p class="text-4xl mb-2">🏋️</p>
+                    <h3 class="font-semibold text-lg">Fuel Your Workout</h3>
+                    <p class="text-sm text-gray-600">Your 5 PM snack is vital for energy during your evening gym session.</p>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        const mealPlanData = {
+            monday: {
+                day: "Monday",
+                workout: "Back Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["1 bowl of oats cooked with milk, topped with nuts, seeds, and berries.", "2 moong dal chillas with paneer filling."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["1 bowl of Greek yogurt with a sprinkle of flax seeds."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of rajma (kidney bean curry), 1 cup of brown rice, a large portion of green vegetable sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["1 banana with 1 tbsp peanut butter and a handful of almonds."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["Start with 1 scoop of whey protein with milk or water.", "Then have 2-3 multigrain rotis with paneer bhurji and a bowl of dal."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["1 glass of warm milk with a pinch of turmeric."] }
+                ],
+                macros: { protein: 150, carbs: 320, fats: 85 }
+            },
+            tuesday: {
+                day: "Tuesday",
+                workout: "Chest Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["3-4 idlis with sambar and coconut chutney.", "1 glass of milk."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["A bowl of mixed fruits (apple, papaya, and pomegranate)."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of chana masala, 1 cup of quinoa, a large portion of mixed vegetable sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["2 besan chillas with mint chutney."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["2-3 rotis with a mixed vegetable and tofu curry, and a bowl of curd."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["A handful of soaked almonds and walnuts."] }
+                ],
+                macros: { protein: 140, carbs: 310, fats: 80 }
+            },
+            wednesday: {
+                day: "Wednesday",
+                workout: "Leg Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["2 paneer parathas with a bowl of curd."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["A glass of sattu drink (sweet or savory)."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of dal makhani, 1 cup of brown rice, a large portion of gobi aloo sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["A small bowl of sweet potato chaat."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["Start with 1 scoop of whey protein with milk or water, and a handful of grapes.", "Then have 2-3 rotis with a black chana curry and a bowl of raita."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["1 glass of warm milk with a pinch of nutmeg."] }
+                ],
+                macros: { protein: 155, carbs: 330, fats: 90 }
+            },
+            thursday: {
+                day: "Thursday",
+                workout: "Shoulder Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["A large bowl of vegetable dalia with peanuts."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["A bowl of fruit salad with a sprinkle of chaat masala."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of kadhi with 1 cup of brown rice, a large portion of bhindi sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["An apple with 1 tbsp of almond butter."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["Start with 1 scoop of whey protein with milk or water, and an orange.", "Then have 2-3 rotis with palak paneer and a bowl of dal."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["A handful of roasted pumpkin seeds."] }
+                ],
+                macros: { protein: 145, carbs: 300, fats: 88 }
+            },
+            friday: {
+                day: "Friday",
+                workout: "Arms Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["2 uttapams with sambar and coconut chutney."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["A glass of buttermilk."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of mixed dal, 1 cup of brown rice, a large portion of brinjal sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["2 rice cakes with peanut butter and sliced banana."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["Start with 1 scoop of whey protein with milk or water, and a small bowl of berries.", "Then have 2-3 rotis with a soya chunk curry and a bowl of curd."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["1 glass of warm milk."] }
+                ],
+                macros: { protein: 160, carbs: 315, fats: 75 }
+            },
+            saturday: {
+                day: "Saturday",
+                workout: "Leg Day",
+                meals: [
+                    { time: "7:30 AM", type: "Breakfast", items: ["2 stuffed gobi parathas with a bowl of curd."] },
+                    { time: "11:00 AM", type: "Mid-Morning Snack", items: ["A handful of roasted makhana."] },
+                    { time: "1:00 PM", type: "Lunch", items: ["1 large bowl of lobia (black-eyed peas) curry, 1 cup of brown rice, a large portion of mixed vegetable sabzi, and a side salad."] },
+                    { time: "5:00 PM", type: "Pre-Workout Snack", items: ["A small bowl of poha with peanuts."] },
+                    { time: "10:00 PM", type: "Post-Workout Dinner", items: ["Start with 1 scoop of whey protein with milk or water, and a banana.", "Then have 2-3 rotis with a kathal (jackfruit) sabzi and a bowl of dal."] },
+                    { time: "11:30 PM", type: "Before Bed", items: ["A handful of cashews."] }
+                ],
+                macros: { protein: 150, carbs: 340, fats: 95 }
+            },
+            sunday: {
+                day: "Sunday",
+                workout: "Rest Day",
+                meals: [
+                    { time: "All Day", type: "Focus on Recovery", items: ["On your rest day, focus on eating nutritious meals to help your muscles recover.", "You can follow a similar pattern to the other days, but you don't need a pre-workout meal.", "Have a slightly more relaxed approach, but don't skip meals."] }
+                ],
+                macros: { protein: 130, carbs: 280, fats: 70 }
+            }
+        };
+
+        const planContent = document.getElementById('plan-content');
+        let macroChart = null;
+
+        function createOrUpdateChart(dayKey) {
+            const dayData = mealPlanData[dayKey];
+            if (!dayData || !dayData.macros) return;
+
+            const ctx = document.getElementById('macroChartCanvas').getContext('2d');
+            
+            if (macroChart) {
+                macroChart.destroy();
+            }
+
+            macroChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Protein (g)', 'Carbs (g)', 'Fats (g)'],
+                    datasets: [{
+                        label: 'Estimated Macros',
+                        data: [dayData.macros.protein, dayData.macros.carbs, dayData.macros.fats],
+                        backgroundColor: [
+                            'rgba(212, 163, 115, 0.8)',
+                            'rgba(254, 250, 224, 0.8)',
+                            'rgba(188, 158, 13, 0.8)'
+                        ],
+                        borderColor: [
+                            '#D4A373',
+                            '#FEFAE0',
+                            '#BC9E0D'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#4A4A4A',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + 'g';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayDay(dayKey) {
+            const dayData = mealPlanData[dayKey];
+            if (!dayData) return;
+
+            let mealsHtml = dayData.meals.map(meal => {
+                const itemsHtml = meal.items.map(item => `<li class="text-gray-600">${item}</li>`).join('');
+                return `
+                    <div class="bg-white rounded-xl shadow-md p-6 transform hover:scale-105 transition-transform duration-300">
+                        <h4 class="font-bold text-lg text-[#6B4F4F]">${meal.type}</h4>
+                        <p class="text-sm text-gray-500 mb-3">${meal.time}</p>
+                        <ul class="list-disc list-inside space-y-1">${itemsHtml}</ul>
+                    </div>
+                `;
+            }).join('');
+
+            const chartHtml = dayData.macros ? `
+                <div class="md:col-span-2 lg:col-span-1 bg-white rounded-xl shadow-md p-6">
+                     <h3 class="text-xl font-bold text-center mb-4 text-[#6B4F4F]">Estimated Daily Macros</h3>
+                     <div class="chart-container">
+                        <canvas id="macroChartCanvas"></canvas>
+                     </div>
+                </div>` : '';
+
+            planContent.innerHTML = `
+                <div class="day-plan" id="${dayKey}-plan">
+                    <h2 class="text-3xl font-bold text-center mb-2">${dayData.day}</h2>
+                    <h3 class="text-xl text-center text-gray-500 mb-8">${dayData.workout}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${mealsHtml}
+                        ${chartHtml}
+                    </div>
+                </div>
+            `;
+
+            if (dayData.macros) {
+                createOrUpdateChart(dayKey);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.day-tab');
+            const today = new Date().toLocaleString('en-us', { weekday: 'long' }).toLowerCase();
+            
+            let initialDay = 'monday';
+            if (Object.keys(mealPlanData).includes(today)) {
+                initialDay = today;
+            }
+
+            function setActiveTab(dayKey) {
+                tabs.forEach(tab => {
+                    tab.classList.remove('active-tab');
+                    if (tab.dataset.day === dayKey) {
+                        tab.classList.add('active-tab');
+                    }
+                });
+                displayDay(dayKey);
+            }
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    setActiveTab(tab.dataset.day);
+                });
+            });
+
+            setActiveTab(initialDay);
+        });
+    </script>
+</body>
+</html>
